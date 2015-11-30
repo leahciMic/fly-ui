@@ -138,7 +138,7 @@ registerComponent({
 
     setInterval(() => {
       this.name = randomString();
-    }, Math.floor(Math.random() * 10000) + 5000);
+    }, Math.floor(Math.random() * 5000) + 1500);
 
 
     this.time = '' + new Date();
