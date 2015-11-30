@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
         component.previousState = JSON.parse(JSON.stringify(component.state));
         component.renderDescendants.forEach(function(render) {
           render.el.textContent = render.template(component.state);
-          console.log(render.template(component.state));
         });
       }
     });
@@ -87,7 +86,7 @@ registerComponent({
     this.name = 'Michael';
     this.time = '' + new Date();
     setInterval(() => {
-      this.time = '' + new Date();
-    }, 1000);
+      this.time = +new Date();
+    }, 1);
   },
 });
