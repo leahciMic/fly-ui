@@ -78,8 +78,15 @@ registerComponent({
   controller: function controllerFn() {
     this.name = 'Michael';
     this.time = '' + new Date();
+    this.list = [
+    ];
+
+    for (let i = 0; i < 26; i++) {
+      this.list(String.fromCharCode(65 + i));
+    }
+
     setInterval(() => {
       this.time = +new Date();
-    }, 1);
+    }, 1000);
   },
 });
