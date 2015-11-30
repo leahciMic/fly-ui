@@ -54,24 +54,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }));
       }
     }
+      // if (el.attributes)
   });
 
 
   stateWorker.onmessage = function(event) {
     const message = JSON.parse(event.data);
-
+    console.log('what');
     if (message.action === 'updateState') {
       Object.keys(message.textContent).forEach(function(elId) {
+
         nodeMap[elId].textContent = message.textContent[elId];
       });
     }
   };
 
-  const render = function() {
+  function Render() {
     stateWorker.postMessage('render');
-    window.requestAnimationFrame(render);
   };
-  render();
+
+  window.setInterval(Render, 2500);
+
+  // const render = function() {
+  //   stateWorker.postMessage('render');
+  //   window.requestAnimationFrame(render);
+  // };
+  // render();
 });
 
 
