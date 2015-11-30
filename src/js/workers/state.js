@@ -1,7 +1,7 @@
 import flyTemplate from 'fly-template';
 
 function stateChanged(oldState, newState) {
-  if (JSON.stringify(oldState) !== JSON.stringify(newState)) {
+  if (oldState !== newState) {
     return true;
   }
   return false; // nothing changed
@@ -19,14 +19,21 @@ onmessage = function onmessage(event) {
       textContent: {},
     };
     components.forEach(function(component) {
-      if (stateChanged(component.previousState, component.state)) {
-        component.previousState = JSON.parse(JSON.stringify(component.state));
+      const stringifiedState = JSON.stringify(component.state);
+
+      if (stateChanged(component.previousState, stringifiedState)) {
+        component.previousState = stringifiedState;
+
         component.renderDescendants.forEach(function(render) {
           updates.textContent[render.el] = render.template(component.state);
         });
       }
     });
-    postMessage(JSON.stringify(updates));
+
+    if (Object.keys(updates.textContent).length) {
+      postMessage(JSON.stringify(updates));
+    }
+
     return;
   }
 
@@ -46,9 +53,7 @@ onmessage = function onmessage(event) {
 
     components.push(component);
 
-    if (!currentParent) {
-      currentParent = component;
-    }
+    currentParent = component;
 
     component.controller();
   }
