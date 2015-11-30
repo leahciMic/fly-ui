@@ -47,6 +47,22 @@ document.addEventListener('DOMContentLoaded', function onDomReady() {
     return currentId;
   };
 
+  const pendingTextUpdates = {};
+
+  let firstUpdate = false;
+
+  stateWorker.onmessage = function onStateWorkerUpdate(event) {
+    const message = JSON.parse(event.data);
+
+    if (message.action === 'updateTextContent') {
+      if (!firstUpdate) {
+        firstUpdate = true;
+      }
+
+      pendingTextUpdates[message.el] = message.template;
+    }
+  };
+
   walkDom(document.body, function registerComponents(el) {
     const tag = el.tagName;
     const controller = tags[tag];
@@ -71,28 +87,12 @@ document.addEventListener('DOMContentLoaded', function onDomReady() {
     }
   });
 
-  const pendingTextUpdates = {};
-  let firstUpdate = false;
-
-  stateWorker.onmessage = function onStateWorkerUpdate(event) {
-    const message = JSON.parse(event.data);
-
-    if (message.action === 'updateTextContent') {
-      if (!firstUpdate) {
-        console.log('got update');
-        firstUpdate = true;
-      }
-
-      pendingTextUpdates[message.el] = message.template;
-    }
-  };
 
   function updateDom() {
     requestAnimationFrame(updateDom);
     if (isScrolling) {
       return;
     }
-    // console.log('updateDom');
     const keys = Object.keys(pendingTextUpdates);
 
     if (keys.length) {
@@ -119,18 +119,6 @@ document.addEventListener('DOMContentLoaded', function onDomReady() {
   };
 
   updateDom();
-
-  function Render() {
-    stateWorker.postMessage('render');
-  };
-
-  window.setInterval(Render, 100);
-
-  // const render = function() {
-  //   stateWorker.postMessage('render');
-  //   window.requestAnimationFrame(render);
-  // };
-  // render();
 });
 
 
@@ -150,7 +138,7 @@ registerComponent({
 
     setInterval(() => {
       this.name = randomString();
-    }, Math.floor(Math.random() * 5000) + 1);
+    }, Math.floor(Math.random() * 10000) + 5000);
 
 
     this.time = '' + new Date();
@@ -160,9 +148,5 @@ registerComponent({
     for (let i = 0; i < 26; i++) {
       this.list.push(String.fromCharCode(65 + i));
     }
-
-    setInterval(() => {
-      this.time = +new Date();
-    }, 1000);
   },
 });

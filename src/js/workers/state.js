@@ -1,4 +1,8 @@
 import flyTemplate from 'fly-template';
+import zone from 'zone.js';
+
+const components = [];
+let currentParent = undefined;
 
 function stateChanged(oldState, newState) {
   if (oldState !== newState) {
@@ -7,46 +11,37 @@ function stateChanged(oldState, newState) {
   return false; // nothing changed
 };
 
-const components = [];
-let currentParent = undefined;
+const Render = function(render, state) {
+  postMessage(JSON.stringify({
+    action: 'updateTextContent',
+    el: render.el,
+    template: render.template(state),
+  }));
+};
+
+const detectChanges = function() {
+  components.forEach(function checkComponentStateChanged(component) {
+    const stringifiedState = JSON.stringify(component.state);
+
+    if (stateChanged(component.previousState, stringifiedState)) {
+      component.previousState = stringifiedState;
+
+      component.renderDescendants.forEach(function(render) {
+        // would batching these increase performance?
+        Render(render, component.state);
+      });
+    }
+  });
+};
+
+const myZone = zone.zone.fork({
+  afterTask: detectChanges,
+});
 
 onmessage = function onmessage(event) {
-
-  // @todo assumption, onmessage, and postMessage are in order
-  if (event.data === 'render') {
-    const updates = {
-      action: 'updateState',
-      textContent: {},
-    };
-
-    components.forEach(function checkComponentStateChanged(component) {
-      const stringifiedState = JSON.stringify(component.state);
-
-      if (stateChanged(component.previousState, stringifiedState)) {
-        component.previousState = stringifiedState;
-
-        component.renderDescendants.forEach(function(render) {
-          // would batching these increase performance?
-          postMessage(JSON.stringify({
-            action: 'updateTextContent',
-            el: render.el,
-            template: render.template(component.state),
-          }));
-        });
-      }
-    });
-
-    if (Object.keys(updates.textContent).length) {
-      postMessage(JSON.stringify(updates));
-    }
-
-    return;
-  }
-
   const message = JSON.parse(event.data);
 
   if (message.action === 'registerComponent') {
-    console.log('registerComponent');
     const state = {};
 
     const component = {
@@ -62,14 +57,20 @@ onmessage = function onmessage(event) {
 
     currentParent = component;
 
-    component.controller();
+    myZone.run(function() {
+      component.controller();
+    });
   }
 
   if (message.action === 'registerTemplate') {
-    currentParent.renderDescendants.push({
+    const render = {
       el: message.el,
       parent: currentParent,
       template: flyTemplate(message.template),
-    });
+    };
+    currentParent.renderDescendants.push(render);
+    Render(render, currentParent.state);
   }
+
+  detectChanges();
 };
