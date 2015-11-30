@@ -1,18 +1,8 @@
 // initial DOM walk
 import flyTemplate from 'fly-template';
+import walkDom from './lib/walk-dom.js';
 
 const tags = {};
-
-const walkDom = function walkDom(node, func) {
-  let currentNode = node;
-  func(currentNode);
-  currentNode = currentNode.firstChild;
-
-  while (currentNode) {
-    walkDom(currentNode, func);
-    currentNode = currentNode.nextSibling;
-  }
-};
 
 const registerComponent = function registerComponent(options = {}) {
   const {tag, controller} = options;
