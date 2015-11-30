@@ -10,9 +10,27 @@ const registerComponent = function registerComponent(options = {}) {
   tags[tag.toUpperCase()] = controller;
 };
 
+// quick concept note:
+
+// heirachies inherit data. but siblings with undefined parents could be spread
+
+
+var StateWorker = require('worker!./workers/state.js');
+var stateWorker = new StateWorker();
+
 document.addEventListener('DOMContentLoaded', function() {
   let components = [];
   let currentParent = undefined;
+
+  let currentId = 0;
+  const nodeMap = Object.create(null);
+
+  const registerEl = function(el) {
+    currentId++;
+    el.__currentId = currentId;
+    nodeMap[currentId] = el;
+    return currentId;
+  };
 
   walkDom(document.body, function(el) {
     const tag = el.tagName;
@@ -20,55 +38,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (el.nodeName === '#text') {
       if (el.textContent.match(/\$\{/)) {
-        currentParent.renderDescendants.push({
-          el: el,
-          parent: currentParent,
-          template: flyTemplate(el.textContent),
-        });
+        stateWorker.postMessage(JSON.stringify({
+          action: 'registerTemplate',
+          template: el.textContent,
+          el: registerEl(el),
+        }));
       }
     } else if (controller) {
-      const state = {};
-
-      const component = {
+      stateWorker.postMessage(JSON.stringify({
+        action: 'registerComponent',
         tag: tag,
-        el: el,
-        controller: controller.bind(state),
-        previousState: {},
-        state: state,
-        renderDescendants: [],
-      };
-
-      components.push(component);
-
-      if (!currentParent) {
-        currentParent = component;
-      }
-
-      component.controller();
+        el: registerEl(el),
+        controller: controller.toString(),
+      }));
     }
   });
 
+
+  stateWorker.onmessage = function(event) {
+    const message = JSON.parse(event.data);
+
+    if (message.action === 'updateState') {
+      Object.keys(message.textContent).forEach(function(elId) {
+        nodeMap[elId].textContent = message.textContent[elId];
+      });
+    }
+  };
+
   const render = function() {
-    components.forEach(function(component) {
-      if (stateChanged(component.previousState, component.state)) {
-        component.previousState = JSON.parse(JSON.stringify(component.state));
-        component.renderDescendants.forEach(function(render) {
-          render.el.textContent = render.template(component.state);
-        });
-      }
-    });
+    stateWorker.postMessage('render');
     window.requestAnimationFrame(render);
   };
   render();
-
 });
 
-function stateChanged(oldState, newState) {
-  if (JSON.stringify(oldState) !== JSON.stringify(newState)) {
-    return true;
-  }
-  return false; // nothing changed
-};
 
 registerComponent({
   tag: 'hello',
