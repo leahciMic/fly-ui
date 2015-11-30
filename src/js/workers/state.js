@@ -18,14 +18,20 @@ onmessage = function onmessage(event) {
       action: 'updateState',
       textContent: {},
     };
-    components.forEach(function(component) {
+
+    components.forEach(function checkComponentStateChanged(component) {
       const stringifiedState = JSON.stringify(component.state);
 
       if (stateChanged(component.previousState, stringifiedState)) {
         component.previousState = stringifiedState;
 
         component.renderDescendants.forEach(function(render) {
-          updates.textContent[render.el] = render.template(component.state);
+          // would batching these increase performance?
+          postMessage(JSON.stringify({
+            action: 'updateTextContent',
+            el: render.el,
+            template: render.template(component.state),
+          }));
         });
       }
     });
@@ -40,6 +46,7 @@ onmessage = function onmessage(event) {
   const message = JSON.parse(event.data);
 
   if (message.action === 'registerComponent') {
+    console.log('registerComponent');
     const state = {};
 
     const component = {
