@@ -44,13 +44,15 @@ document.addEventListener('DOMContentLoaded', function() {
           el: registerEl(el),
         }));
       }
-    } else if (controller) {
-      stateWorker.postMessage(JSON.stringify({
-        action: 'registerComponent',
-        tag: tag,
-        el: registerEl(el),
-        controller: controller.toString(),
-      }));
+    } else {
+      if (controller) {
+        stateWorker.postMessage(JSON.stringify({
+          action: 'registerComponent',
+          tag: tag,
+          el: registerEl(el),
+          controller: controller.toString(),
+        }));
+      }
     }
   });
 
@@ -76,13 +78,28 @@ document.addEventListener('DOMContentLoaded', function() {
 registerComponent({
   tag: 'hello',
   controller: function controllerFn() {
-    this.name = 'Michael';
+    var randomString = function() {
+      const ml = Math.floor(Math.random() * 26 + 1);
+      let word = '';
+      for (let l = 0; l < ml; l++) {
+        word += String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      }
+      return word;
+    };
+
+    this.name = randomString();
+
+    setInterval(() => {
+      this.name = randomString();
+    }, Math.floor(Math.random() * 25 + 1) * 1000);
+
+
     this.time = '' + new Date();
     this.list = [
     ];
 
     for (let i = 0; i < 26; i++) {
-      this.list(String.fromCharCode(65 + i));
+      this.list.push(String.fromCharCode(65 + i));
     }
 
     setInterval(() => {
