@@ -30,6 +30,7 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
+    "fly-template": "^0.1.3",
     "json-loader": "^0.5.4",
     "react": "^0.14.3"
   }
